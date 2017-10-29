@@ -28,13 +28,13 @@ class MLPClassifier(MLP):
 
     def f_out(self, x): # override
         # sigmoid or softmax
-        # return logsig(x)
-        return softmax(x)
+        return logsig(x)
+        # return softmax(x)
 
     def df_out(self, x): # override
         # corresponding derivation
-        # return dlogsig(x)
-        return dsoftmax(x)
+        return dlogsig(x)
+        # return dsoftmax(x)
 
 
     ## prediction pass
