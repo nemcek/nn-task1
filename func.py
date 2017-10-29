@@ -1,6 +1,5 @@
 import numpy as np
 
-
 ## general activations
 
 def relu(X):
@@ -51,6 +50,9 @@ def dsoftmax(X):
 
 ## cost functions
 
+def cost(targets, outputs): # new
+        return np.sum((targets - outputs)**2, axis=0)
+
 def MSE(D, Y):
     return np.sum((D - Y)**2, axis=0)
 
@@ -61,3 +63,18 @@ def CE(D, Y):
     return -np.sum(np.log(Y) * D, axis=0)
 
 # TODO dCE
+
+FUNCTIONS = {
+    'relu' : { 'func': relu, 'dfunc': drelu },
+    'logsig' : { 'func': logsig, 'dfunc': dlogsig },
+    'tanh' : { 'func': tanh, 'dfunc': dtanh },
+    'softmax' : { 'func': softmax, 'dfunc': dsoftmax },
+    'linear' : { 'func': linear, 'dfunc': dlinear }
+}
+
+def call(func, val, isDerivation=False):
+    f = FUNCTIONS.get(func)
+    if (isDerivation):
+        return f.get('dfunc')(val)
+    else:
+        return f.get('func')(val)

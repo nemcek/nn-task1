@@ -1,35 +1,57 @@
 import numpy as np
 
 from util import *
-
+from func import *
 
 class MLP():
 
-    def __init__(self, dim_in, dim_hid, dim_out):
-        self.dim_in     = dim_in
-        self.dim_hid    = dim_hid
-        self.dim_out    = dim_out
-
-        self.W_hid = np.random.rand(dim_hid, dim_in + 1)
-        self.W_out = np.random.rand(dim_out, dim_hid + 1)
-
+    def __init__(self, settings):
+        self.dims       = [x.get('neurons') for x in settings['layers']]
+        self.dims.append(settings['outputs'])
+        self.layers     = len(self.dims)     # last dimension is output
+        self.weights    = [np.random.rand(self.dims[i + 1], self.dims[i] + 1) for i in range(self.layers - 1)]
+        self.settings   = settings
 
     def forward(self, x):
-        a = self.W_hid @ augment(x)
-        h = augment(self.f_hid(a))
-        b = self.W_out @ h
-        y = self.f_out(b)
+        layerInputs = []
+        layerOutputs = []
+        x = augment(x)
 
-        return y, b, h, a
+        # handle last one specifically
+        for i in range(self.layers - 2):
+            inputs, outputs = self.__forward(x, i)
+            x = outputs
+            layerInputs.append(inputs)
+            layerOutputs.append(outputs)
+        
+        inputs, outputs = self.__forward(x, self.layers - 2)
+        layerInputs.append(inputs)
+        layerOutputs.append(outputs[: -1])  # without bias
+        return layerInputs, layerOutputs, layerOutputs[-1]
+
+    def __forward(self, x, i):
+        a = self.weights[i] @ x
+        h = augment(call(self.settings['layers'][i]['function'], a))
+        return a, h
 
 
     def backward(self, x, d):
-        y, b, h, a = self.forward(x)
+        layerInputs, layerOutputs, y = self.forward(x)
+        dWeights = []
+        g = None
 
-        g_out = (d - y) * self.df_out(b)
-        g_hid = (g_out.T @ self.W_out[:, 0:-1]) * self.df_hid(a)
+        for i in reversed(range(self.layers - 1)):
+            if i == self.layers - 2:    # last
+                g = (d - y) * call(self.settings['layers'][i]['function'], layerInputs[i], isDerivation=True)
+                dW = layerOutputs[i - 1].reshape((1, -1)).T * g.reshape((1, -1))
+                dWeights.append(dW)
+            elif i == 0:    # input
+                g = (g.T @ self.weights[i + 1][:, 0:-1]) * call(self.settings['layers'][i]['function'], layerInputs[i], isDerivation=True)
+                dW = augment(x).reshape((1, -1)).T * g.reshape((1, -1))
+                dWeights.append(dW)
+            else:
+                g = (g.T @ self.weights[i + 1][:, 0:-1]) * call(self.settings['layers'][i]['function'], layerInputs[i], isDerivation=True)
+                dW = layerOutputs[i - 1].reshape((1, -1)).T * g.reshape((1, -1))
+                dWeights.append(dW)
 
-        dW_out = h.reshape((1, -1)).T @ g_out.reshape((1, -1))
-        dW_hid = augment(x).reshape((1, -1)).T @ g_hid.reshape((1, -1))
-
-        return y, dW_hid, dW_out
+        return y, list(reversed(dWeights))
