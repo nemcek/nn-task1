@@ -41,7 +41,7 @@ class Data:
         self.estimate_labels = labels[estimate_indices]
 
     def load_test_data(self, file):
-        self.train_inputs, self.train_labels, _ = self.__load_data(file)
+        self.test_inputs, self.test_labels, _ = self.__load_data(file)
 
     def __load_data(self, file):
         data = np.loadtxt(file, dtype=str, skiprows=1).T
