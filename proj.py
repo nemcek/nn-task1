@@ -10,26 +10,37 @@ from func import *
 data = Data()
 data.load_data('data/train.dat', 'data/test.dat', 20)
 
-settings = {
+architecture = {
     'outputs' : np.max(data.train_labels) + 1,
     'layers' : [
         {
             'neurons': data.dims,
-            'function': 'tanh'
+            'function': 'tanh',
+            'weights': {
+                'distribution': 'uniform',
+                'scale': [0, 1]
+            }
         },
         {
             'neurons': 20,
-            'function': 'logsig'
+            'function': 'logsig',
+            'weights': {
+                'distribution': 'uniform',
+                'scale': [0, 1]
+            }
         },
         {
             'neurons': 6,
-            'function': 'linear'
+            'function': 'linear',
+            'weights': {
+                'distribution': 'uniform',
+                'scale': [0, 1]
+            }
         }
     ],
 }
 
-model = MLPClassifier(settings)
-# model = MLPClassifier(data.dims, 20, np.max(data.train_labels)+1)
+model = MLPClassifier(architecture)
 trainCEs, trainREs = model.train(data.train_inputs, data.train_labels, alpha=0.05, eps=200, trace=True, trace_interval=10)
  
 testCE, testRE = model.test(data.estimate_inputs, data.estimate_labels)

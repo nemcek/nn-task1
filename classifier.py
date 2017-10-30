@@ -6,23 +6,19 @@ from func import *
 
 class MLPClassifier(MLP):
 
-    def __init__(self, settings):
-        self.n_classes = settings['outputs']
-        super().__init__(settings)
+    def __init__(self, architecture):
+        self.n_classes = architecture['outputs']
+        super().__init__(architecture)
 
     ## prediction pass
     def predict(self, inputs):
-        # outputs, *_ = self.forward(inputs)  # if self.forward() can take a whole batch
-        # outputs = np.stack([self.forward(x)[0] for x in inputs.T]) # otherwise
         _, _, outputs = self.forward(inputs)
-        # return onehot_decode(outputs)
         return onehot_decode(outputs[-1])
 
 
     ## testing pass
 
     def test(self, inputs, labels):
-        # outputs, *_ = self.forward(inputs)
         _, _, outputs = self.forward(inputs)
         targets = onehot_encode(labels, self.n_classes)
         predicted = onehot_decode(outputs)
@@ -57,10 +53,8 @@ class MLPClassifier(MLP):
                 CE += labels[i] != onehot_decode(y)
                 RE += cost(d,y)
 
-                for i in range(self.layers - 1):
+                for i in range(self.n_weights):
                     self.weights[i] += alpha * dWeights[i].T
-                # self.W_hid += alpha * dW_hid.T
-                # self.W_out += alpha * dW_out.T
 
             CE /= count
             RE /= count

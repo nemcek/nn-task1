@@ -60,12 +60,29 @@ class Data:
 
     def normalize_data(self):
         # TODO: Normalize train data as whole and after that split them
-        self.train_inputs[0] = self.normalize(self.train_inputs[0])
-        self.train_inputs[1] = self.normalize(self.train_inputs[1])
-        self.estimate_inputs[0] = self.normalize(self.estimate_inputs[0])
-        self.estimate_inputs[1] = self.normalize(self.estimate_inputs[1])
-        self.test_inputs[0] = self.normalize(self.test_inputs[0])
-        self.test_inputs[0] = self.normalize(self.test_inputs[1])
+        self.train_inputs[0] = DataOperations.normalize(self.train_inputs[0])
+        self.train_inputs[1] = DataOperations.normalize(self.train_inputs[1])
+        self.estimate_inputs[0] = DataOperations.normalize(self.estimate_inputs[0])
+        self.estimate_inputs[1] = DataOperations.normalize(self.estimate_inputs[1])
+        self.test_inputs[0] = DataOperations.normalize(self.test_inputs[0])
+        self.test_inputs[0] = DataOperations.normalize(self.test_inputs[1])
 
-    def normalize(self, data):
+
+class DataOperations:
+
+    _DISTRIB_FUNCTIONS = {
+        'uniform': np.random.rand,
+        'gauss': np.random.randn
+    }
+
+    @staticmethod
+    def normalize(data):
         return (data - np.mean(data)) / np.std(data)
+
+    @staticmethod
+    def scale(data, minVal, maxVal):
+        return data * (maxVal - minVal) + minVal
+
+    @staticmethod
+    def generate_distribution(dist, dims, scale):
+        return(DataOperations.scale(DataOperations._DISTRIB_FUNCTIONS[dist](dims[0], dims[1]), scale[0], scale[1]))
