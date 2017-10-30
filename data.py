@@ -21,9 +21,11 @@ class Data:
     def __init__(self):
         pass
 
-    def load_data(self, train_file, test_file, train_split):
+    def load_data(self, train_file, test_file, train_split, normalize=True):
         self.load_train_data(train_file, train_split)
         self.load_test_data(test_file)
+        if normalize:
+            self.normalize_data()
 
     def load_train_data(self, file, split):
         inputs, labels, count = self.__load_data(file)
@@ -55,3 +57,15 @@ class Data:
         labels = np.array(list(map(ord, labels)))
 
         return inputs, labels, count
+
+    def normalize_data(self):
+        # TODO: Normalize train data as whole and after that split them
+        self.train_inputs[0] = self.normalize(self.train_inputs[0])
+        self.train_inputs[1] = self.normalize(self.train_inputs[1])
+        self.estimate_inputs[0] = self.normalize(self.estimate_inputs[0])
+        self.estimate_inputs[1] = self.normalize(self.estimate_inputs[1])
+        self.test_inputs[0] = self.normalize(self.test_inputs[0])
+        self.test_inputs[0] = self.normalize(self.test_inputs[1])
+
+    def normalize(self, data):
+        return (data - np.mean(data)) / np.std(data)
