@@ -10,10 +10,10 @@ import numpy as np
     Class handling input data, spliting into train and estimation sets
 """
 class Data:
-    train_inputs = None
-    train_labels = None
-    estimate_inputs = None
-    estimate_labels = None
+    estimation_inputs = None
+    estimation_labels = None
+    validation_inputs = None
+    validation_labels = None
     test_inputs = None
     test_labels = None
     dims = 0
@@ -22,12 +22,10 @@ class Data:
         pass
 
     def load_data(self, train_file, test_file, train_split, normalize=True):
-        self.load_train_data(train_file, train_split)
-        self.load_test_data(test_file)
-        if normalize:
-            self.normalize_data()
+        self.load_train_data(train_file, train_split, normalize)
+        self.load_test_data(test_file, normalize)
 
-    def load_train_data(self, file, split):
+    def load_train_data(self, file, split, normalize):
         inputs, labels, count = self.__load_data(file)
 
         # split to train and estimate set
@@ -36,14 +34,23 @@ class Data:
         split = int(count / 100 * split)
         train_indices = indices[:split]
         estimate_indices = indices[split:]
+        
+        if normalize:
+            for i in range(self.dims):
+                inputs[i] = DataOperations.normalize(inputs[i])
 
-        self.train_inputs = inputs[:, train_indices]
-        self.train_labels = labels[train_indices]
-        self.estimate_inputs = inputs[:, estimate_indices]
-        self.estimate_labels = labels[estimate_indices]
+        self.estimation_inputs = inputs[:, train_indices]
+        self.estimation_labels = labels[train_indices]
+        self.validation_inputs = inputs[:, estimate_indices]
+        self.validation_labels = labels[estimate_indices]
 
-    def load_test_data(self, file):
+    def load_test_data(self, file, normalize):
         self.test_inputs, self.test_labels, _ = self.__load_data(file)
+
+        if normalize:
+            for i in range(self.dims):
+                self.test_inputs[i] = DataOperations.normalize(self.test_inputs[i])
+
 
     def __load_data(self, file):
         data = np.loadtxt(file, dtype=str, skiprows=1).T
@@ -60,10 +67,10 @@ class Data:
 
     def normalize_data(self):
         # TODO: Normalize train data as whole and after that split them
-        self.train_inputs[0] = DataOperations.normalize(self.train_inputs[0])
-        self.train_inputs[1] = DataOperations.normalize(self.train_inputs[1])
-        self.estimate_inputs[0] = DataOperations.normalize(self.estimate_inputs[0])
-        self.estimate_inputs[1] = DataOperations.normalize(self.estimate_inputs[1])
+        self.estimation_inputs[0] = DataOperations.normalize(self.estimation_inputs[0])
+        self.estimation_inputs[1] = DataOperations.normalize(self.estimation_inputs[1])
+        self.validation_inputs[0] = DataOperations.normalize(self.estimate_inputs[0])
+        self.validation_inputs[1] = DataOperations.normalize(self.estimate_inputs[1])
         self.test_inputs[0] = DataOperations.normalize(self.test_inputs[0])
         self.test_inputs[0] = DataOperations.normalize(self.test_inputs[1])
 
@@ -72,7 +79,7 @@ class DataOperations:
 
     _DISTRIB_FUNCTIONS = {
         'uniform': np.random.rand,
-        'gauss': np.random.randn
+        'gauss': np.random.randn,
     }
 
     @staticmethod

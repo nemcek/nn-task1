@@ -1,8 +1,10 @@
 import numpy as np
+import queue as q
 
 from mlp import *
 from util import *
 from func import *
+from early_stopping import *
 
 class MLPClassifier(MLP):
 
@@ -27,11 +29,18 @@ class MLPClassifier(MLP):
         return CE, RE
 
 
-    ## training
+    def __init(self, training_settings):
+       self.epochs = training_settings['max_epochs'] 
+       self.alpha = training_settings['learning_rate']
+       self.early_stopping = EarlyStopping(training_settings['early_stopping'], self.weights)
+       self.momentum = training_settings['momentum']
+       self.last_d_weights = list((np.zeros((weight.shape[0], weight.shape[1])).T for weight in self.weights))
 
-    def train(self, inputs, labels, alpha=0.1, eps=100, trace=False, trace_interval=10):
+    ## training
+    def train(self, inputs, labels, validation_inputs, validation_labels, training_settings, trace=False, trace_interval=10):
         (_, count) = inputs.shape
         targets = onehot_encode(labels, self.n_classes)
+        self.__init(training_settings)
 
         if trace:
             ion()
@@ -39,8 +48,8 @@ class MLPClassifier(MLP):
         CEs = []
         REs = []
 
-        for ep in range(eps):
-            print('Ep {:3d}/{}: '.format(ep+1, eps), end='')
+        for ep in range(self.epochs):
+            print('Ep {:3d}/{}: '.format(ep+1, self.epochs), end='')
             CE = 0
             RE = 0
 
@@ -54,15 +63,15 @@ class MLPClassifier(MLP):
                 RE += cost(d,y)
 
                 for i in range(self.n_weights):
-                    self.weights[i] += alpha * dWeights[i].T
+                    self.weights[i] += (self.alpha * dWeights[i].T) + (self.momentum * self.last_d_weights[i].T)
+
+                self.last_d_weights = dWeights
 
             CE /= count
             RE /= count
 
             CEs.append(CE)
             REs.append(RE)
-
-            print('CE = {:6.2%}, RE = {:.5f}'.format(CE, RE))
 
             if trace and ((ep+1) % trace_interval == 0):
                 clear()
@@ -71,9 +80,20 @@ class MLPClassifier(MLP):
                 plot_both_errors(CEs, REs, block=False)
                 redraw()
 
+            valid_ce, _ = self.test(validation_inputs, validation_labels)
+            if (self.early_stopping.should_stop(ep, valid_ce, self.weights)):
+                self.weights = self.early_stopping.weights
+                print('validation error: {:6.2%}'.format(valid_ce))
+                print('CE = {:6.2%}, RE = {:.5f}, vCE = {:6.2%}'.format(CE, RE, valid_ce))
+                break
+
+            print('CE = {:6.2%}, RE = {:.5f}, vCE = {:6.2%}'.format(CE, RE, valid_ce))
+
         if trace:
             ioff()
 
         print()
 
         return CEs, REs
+
+    
