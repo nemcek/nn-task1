@@ -43,18 +43,12 @@ class EarlyStopping:
             self.error_queue.get_nowait()
         self.error_queue.put_nowait(error)
 
-        if self.error_queue.qsize() < self.error_accumulated['n_previous_epochs']:
-            n = self.error_queue.qsize()
-        else:
-            n = self.error_accumulated['n_previous_epochs']
+        acc_error = 0
+        raised_error = 0
+        if self.error_queue.qsize() >= self.error_accumulated['n_previous_epochs']:
+            acc_error = sum(self.error_queue.queue[i] - self.error_queue.queue[i - 1] for i in range(1, self.error_accumulated['n_previous_epochs']))
 
-        acc_error = sum(self.error_queue.queue[i] - self.error_queue.queue[i - 1] for i in range(1, n)) 
-
-        if self.error_queue.qsize() < self.error_raised['n_previous_epochs']:
-            n = self.error_queue.qsize()
-        else:
-            n = self.error_raised['n_previous_epochs']
-
-        raised_error = sum(1 if self.error_queue.queue[i] - self.error_queue.queue[i - 1] else 0 for i in range(1, n))
+        if self.error_queue.qsize() >= self.error_raised['n_previous_epochs']:
+            raised_error = sum(1 if (self.error_queue.queue[i] - self.error_queue.queue[i - 1]) > 0 else 0 for i in range(1, self.error_raised['n_previous_epochs']))
 
         return acc_error >= self.error_accumulated['threshold'], raised_error >= (self.error_raised['threshold'] * self.error_raised['n_previous_epochs'])
