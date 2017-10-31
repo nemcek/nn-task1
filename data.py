@@ -47,7 +47,7 @@ class Data:
 
         # cast all inputs and labels to float / int
         inputs = np.array(list(map(lambda row: np.array(list(map(float, row))), inputs)))
-        labels = np.array(list(map(ord, labels)))
+        labels = np.array(list(map(lambda label: ord(label) - 65, labels)))
 
         return inputs, labels, count
 
